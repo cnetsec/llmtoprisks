@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LLMTotallyVulnerable - Ask</title>
+</head>
+<body>
+    <h1>LLMTotallyVulnerable 🧠</h1>
+    <h2>Ask a Question</h2>
+    <form method="post">
+        <label>Question:</label><br>
+        <input type="text" name="question" required><br><br>
+        <input type="submit" value="Ask">
+    </form>
+    {% if question %}
+        <p><strong>Question:</strong> {{ question }}</p>
+        <p><strong>Answer:</strong> {{ answer }}</p>
+    {% endif %}
+</body>
+</html>
