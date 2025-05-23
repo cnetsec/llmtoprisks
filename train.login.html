@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login to Train</title>
+</head>
+<body>
+    <h1>Login to Train</h1>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    <form action="{{ url_for('train.train_model') }}" method="POST">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+        <label for="question">Question:</label><br>
+        <input type="text" id="question" name="question" required><br><br>
+        <label for="answer">Answer:</label><br>
+        <input type="text" id="answer" name="answer" required><br><br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
+

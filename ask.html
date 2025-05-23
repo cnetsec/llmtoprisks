@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Ask me - LLMTotallyVulnerable{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-primary text-white text-center">
+            <h2 class="mb-0">Ask me</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="form-group">
+                    <textarea class="form-control" id="question" name="question" rows="5" placeholder="Type your question here..." required>{{ question }}</textarea>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if answer %}
+    <div class="card mt-4">
+        <div class="card-header bg-success text-white text-center">
+            <h2 class="mb-0">Answer</h2>
+        </div>
+        <div class="card-body">
+            <p class="lead text-center">{{ answer }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Preenche o textarea com a pergunta caso haja um erro ao enviar a pergunta
+    document.addEventListener('DOMContentLoaded', function() {
+        const question = "{{ question }}" || "";
+        document.getElementById('question').value = question;
+    });
+</script>
+{% endblock %}
+
