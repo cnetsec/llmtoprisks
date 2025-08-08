@@ -3,14 +3,14 @@ name: 🐍 Semgrep ASVS Coverage for Python
 on:
   workflow_dispatch:
     inputs:
-      pasta_codigo:
-        description: '📁 Caminho do código-fonte'
+      target_path:
+        description: '📂 Caminho do diretório de código a ser analisado'
         required: true
-        default: './'
+        default: '.'
         type: string
 
 jobs:
-  semgrep_asvs:
+  semgrep_asvs_scan:
     name: 🔍 Validação Semgrep - Python (ASVS)
     runs-on: ubuntu-latest
 
@@ -18,9 +18,12 @@ jobs:
       - name: 📥 Clonar repositório
         uses: actions/checkout@v4
 
-      - name: ⚙️ Instalar Semgrep
+      - name: ⚙️ Instalar dependências
         run: |
-          pipx install semgrep
+          python3 -m pip install --upgrade pip
+          pip install pipx
+          pipx ensurepath
+          pipx install semgrep || pip install semgrep  # fallback em caso de erro
 
       - name: 🧪 Executar Semgrep (ASVS)
         run: |
@@ -28,37 +31,30 @@ jobs:
           semgrep scan \
             --config "p/owasp-asvs" \
             --include "py" \
-            --json \
             --output semgrep_output/semgrep-asvs.json \
+            --json \
             --error \
-            "${{ inputs.pasta_codigo }}"
+            --exclude-dir node_modules \
+            "${{ inputs.target_path }}"
 
-      - name: 📄 Gerar relatório em Markdown
+      - name: 📄 Gerar relatório Markdown
         run: |
           echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
           echo "" >> asvs_semgrep_report.md
-
-          if [ -f semgrep_output/semgrep-asvs.json ]; then
+          if [ -s semgrep_output/semgrep-asvs.json ]; then
             jq -r '
               .results[] |
-              "## 🔍 Regra: \(.check_id)\n\n" +
-              "**Mensagem:** \(.extra.message)\n\n" +
-              "**Arquivo:** \(.path)\n" +
-              "**Linha:** \(.start.line)\n\n" +
-              "```python\n" + (.extra.lines // "") + "\n```\n\n" +
-              "---\n"
+              "## 🧠 Rule: \(.check_id)\n\n**Arquivo:** \(.path)\n\n**Linha:** \(.start.line)\n\n```python\n\(.extra.lines | join("\n"))\n```" 
             ' semgrep_output/semgrep-asvs.json >> asvs_semgrep_report.md
           else
-            echo "⚠️ Arquivo semgrep-asvs.json não encontrado. Sem resultados." >> asvs_semgrep_report.md
+            echo "✅ Nenhum problema encontrado." >> asvs_semgrep_report.md
           fi
 
-      - name: 📺 Exibir relatório no terminal
-        run: |
-          echo "📋 Relatório com Detalhes das Regras Encontradas:"
-          cat asvs_semgrep_report.md
-
-      - name: 📤 Upload do relatório
+      - name: 📤 Upload do relatório como artefato
         uses: actions/upload-artifact@v4
         with:
-          name: asvs-semgrep-report-md
+          name: asvs_semgrep_report
           path: asvs_semgrep_report.md
+
+      - name: 📊 Mostrar relatório no terminal
+        run: cat asvs_semgrep_report.md
