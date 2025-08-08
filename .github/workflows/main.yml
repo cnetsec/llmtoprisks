@@ -1,0 +1,48 @@
+name: 🧪 ASVS SAST Coverage with Semgrep (Full L1–L3)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: 'Diretório do código-fonte (ex: ./src)'
+        required: true
+        default: './'
+        type: string
+
+jobs:
+  asvs_sast:
+    name: '🔍 Validar ASVS via Semgrep (L1–L3)'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: ⬇️ Instalar Semgrep
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install semgrep
+
+      - name: 📡 Executar Semgrep com regras ASVS e correlacionadas
+        id: semgrep_run
+        continue-on-error: true
+        run: |
+          mkdir -p results
+          semgrep \
+            --config=https://raw.githubusercontent.com/semgrep-old/rules-owasp-asvs/master \
+            --config=p/owasp \
+            --config=p/r2c-security-audit \
+            --json --output results/asvs_semgrep.json "${{ inputs.target_dir }}" || echo "⚠ Semgrep falhou ou encontrou falhas"
+
+      - name:  Validar cobertura por requisito ASVS
+        run: |
+          echo "### ASVS L1–L3 - Resultados Semgrep"
+          jq -r '.results[] | "• " + .check_id + " → " + .extra.message' results/asvs_semgrep.json || echo "Nenhum resultado detectado"
+          echo ""
+          echo "✅ Geração de relatório concluída; verifique os IDs dos requisitos detectados"
+
+      - name:  Upload dos resultados
+        uses: actions/upload-artifact@v4
+        with:
+          name: asvs_semgrep_results
+          path: results/asvs_semgrep.json
