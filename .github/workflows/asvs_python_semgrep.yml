@@ -1,0 +1,70 @@
+name: 🐍 Semgrep ASVS Coverage for Python
+
+on:
+  workflow_dispatch:
+
+jobs:
+  asvs_python_scan:
+    name: 🔍 ASVS Validation via Semgrep (Python)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Instalar Semgrep
+        run: |
+          curl -sL https://semgrep.dev/install.sh | bash
+
+      - name: 📦 Instalar dependências (opcional)
+        run: |
+          pip install -r requirements.txt || echo "🔎 Nenhum requirements.txt encontrado ou erro ignorado."
+
+      - name: 🧪 Executar Semgrep com regras correlacionadas ao ASVS
+        continue-on-error: true
+        run: |
+          mkdir -p semgrep_output
+          semgrep --config p/security-audit --config p/secrets --config p/python --output semgrep_output/results.sarif --sarif || echo "🟡 Semgrep falhou ou retornou findings."
+
+      - name: 📋 Gerar relatório Markdown com trechos de código ASVS
+        run: |
+          echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
+          echo "" >> asvs_semgrep_report.md
+          echo "## ✅ Findings correlacionados a requisitos do ASVS" >> asvs_semgrep_report.md
+          echo "" >> asvs_semgrep_report.md
+
+          if [ -s semgrep_output/results.sarif ]; then
+            jq -r '
+              .runs[0].results[] |
+              "### 🔹 Regra: \(.ruleId)
+
+🗂️ **Arquivo:** \(.locations[0].physicalLocation.artifactLocation.uri)
+
+🧩 **Trecho:**
+```
+\(.locations[0].physicalLocation.region.snippet.text)
+```
+🚩 **Mensagem:** \(.message.text)
+---
+"
+            ' semgrep_output/results.sarif >> asvs_semgrep_report.md
+          else
+            echo "❌ Nenhum requisito ASVS identificado." >> asvs_semgrep_report.md
+          fi
+
+      - name: 📤 Fazer upload dos artefatos
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-asvs-json
+          path: semgrep_output/results.sarif
+
+      - name: 📤 Upload do relatório Markdown
+        uses: actions/upload-artifact@v4
+        with:
+          name: asvs-semgrep-report-md
+          path: asvs_semgrep_report.md
+
+      - name: 📺 Exibir relatório em tela
+        run: |
+          echo "📋 Relatório Detalhado com Trechos de Código:"
+          cat asvs_semgrep_report.md
