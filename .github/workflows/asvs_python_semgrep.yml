@@ -38,15 +38,6 @@ jobs:
               .runs[0].results[] |
               "### 🔹 Regra: \(.ruleId)
 
-🗂️ **Arquivo:** \(.locations[0].physicalLocation.artifactLocation.uri)
-
-🧩 **Trecho:**
-```
-\(.locations[0].physicalLocation.region.snippet.text)
-```
-🚩 **Mensagem:** \(.message.text)
----
-"
             ' semgrep_output/results.sarif >> asvs_semgrep_report.md
           else
             echo "❌ Nenhum requisito ASVS identificado." >> asvs_semgrep_report.md
