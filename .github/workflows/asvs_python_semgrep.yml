@@ -25,22 +25,18 @@ jobs:
           mkdir -p semgrep_output
           semgrep --config p/security-audit --config p/secrets --config p/python --output semgrep_output/results.sarif --sarif || echo "🟡 Semgrep falhou ou retornou findings."
 
-      - name: 📋 Gerar relatório Markdown com trechos de código ASVS
+      - name: 📝 Gerar relatório em Markdown com trechos
         run: |
           echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
           echo "" >> asvs_semgrep_report.md
-          echo "## ✅ Findings correlacionados a requisitos do ASVS" >> asvs_semgrep_report.md
-          echo "" >> asvs_semgrep_report.md
-
-          if [ -s semgrep_output/results.sarif ]; then
-            jq -r '
-              .runs[0].results[] |
-              "### 🔹 Regra: \(.ruleId)
-
-            ' semgrep_output/results.sarif >> asvs_semgrep_report.md
-          else
-            echo "❌ Nenhum requisito ASVS identificado." >> asvs_semgrep_report.md
-          fi
+          jq -r '
+            .results[] |
+              "### 🔹 Regra: \(.check_id)\n" +
+            "**Arquivo:** \(.path)\n" +
+            "**Linha:** \(.start.line)\n\n" +
+            "```python\n\(.extra.lines | join("\n"))\n```" +
+            "\n---\n"
+            ' semgrep-asvs.json >> asvs_semgrep_report.md
 
       - name: 📤 Fazer upload dos artefatos
         uses: actions/upload-artifact@v4
