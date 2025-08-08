@@ -15,6 +15,7 @@ jobs:
       - name: ⚙️ Instalar Semgrep
         run: |
           pipx install semgrep
+
       - name: 📦 Instalar dependências (opcional)
         run: |
           pip install -r requirements.txt || echo "🔎 Nenhum requirements.txt encontrado ou erro ignorado."
@@ -23,33 +24,39 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p semgrep_output
-          semgrep --config p/security-audit --config p/secrets --config p/python --output semgrep_output/results.sarif --sarif || echo "🟡 Semgrep falhou ou retornou findings."
+          semgrep \
+            --config p/security-audit \
+            --config p/secrets \
+            --config p/python \
+            --json \
+            --output semgrep_output/semgrep-asvs.json || echo "🟡 Semgrep falhou ou retornou findings."
 
       - name: 📝 Gerar relatório em Markdown com trechos (corrigido)
         run: |
-           echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
-           echo "" >> asvs_semgrep_report.md
+          echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
+          echo "" >> asvs_semgrep_report.md
 
-           if [ -f semgrep_output/semgrep-asvs.json ]; then
+          if [ -f semgrep_output/semgrep-asvs.json ]; then
             jq -r '
               .results[] |
               "### 🔹 Regra: \(.check_id)\n" +
-             "**🗂️ Arquivo:** \(.path)\n" +
-             "**🔢 Linha:** \(.start.line)\n\n" +
-             "```python\n\(.extra.lines | join("\n"))\n```\n" +
-             "🟩 **Status:** ❌ Não OK\n\n---\n"
-             ' semgrep_output/semgrep-asvs.json >> asvs_semgrep_report.md
-            else
+              "**🗂️ Arquivo:** \(.path)\n" +
+              "**🔢 Linha:** \(.start.line)\n\n" +
+              "```python\n\(.extra.lines | join("\n"))\n```\n" +
+              "🟩 **Status:** ❌ Não OK\n\n---\n"
+            ' semgrep_output/semgrep-asvs.json >> asvs_semgrep_report.md
+          else
             echo "⚠️ Arquivo semgrep_output/semgrep-asvs.json não encontrado. Sem resultados para exibir." >> asvs_semgrep_report.md
-            fi
+          fi
 
-            echo ""
-            cat asvs_semgrep_report.md
-      - name: 📤 Fazer upload dos artefatos
+          echo ""
+          cat asvs_semgrep_report.md
+
+      - name: 📤 Fazer upload do JSON do Semgrep
         uses: actions/upload-artifact@v4
         with:
           name: semgrep-asvs-json
-          path: semgrep_output/results.sarif
+          path: semgrep_output/semgrep-asvs.json
 
       - name: 📤 Upload do relatório Markdown
         uses: actions/upload-artifact@v4
