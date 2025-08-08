@@ -1,0 +1,82 @@
+name: 🔍 ASVS SAST Coverage with Semgrep + Trecho de Código
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: "📁 Diretório alvo (ex: ./src)"
+        required: true
+        default: "./"
+        type: string
+
+jobs:
+  semgrep_asvs:
+    name: "🧪 Semgrep + ASVS"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Instalar Semgrep
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install semgrep
+
+      - name: 🚨 Rodar Semgrep com regras ASVS
+        run: |
+          semgrep --config p/owasp-asvs --config p/owasp --config p/r2c \
+            --json --output semgrep_asvs_results.json "${{ inputs.target_dir }}" || true
+
+      - name: 📊 Mostrar resultado detalhado
+        run: |
+          echo "📋 Relatório Detalhado com Trechos de Código:"
+          echo ""
+
+          total=$(jq '.results | length' semgrep_asvs_results.json)
+          if [ "$total" -eq 0 ]; then
+            echo "❌ Nenhum requisito ASVS identificado."
+            exit 0
+          fi
+
+          jq -r '
+            .results[] |
+            {
+              check: .check_id,
+              msg: .extra.message,
+              file: .path,
+              line: .start.line,
+              code: .extra.lines
+            } |
+            "🟩 \(.check)\n📄 \(.file):\(.line)\n💬 \(.msg)\n```\n\(.code)\n```"
+          ' semgrep_asvs_results.json
+
+      - name: 💾 Salvar artefato JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-asvs-json
+          path: semgrep_asvs_results.json
+
+      - name: 📤 Gerar relatório Markdown
+        run: |
+          echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
+          echo "| Requisito ASVS | Caminho do Arquivo | Linha | Status | Mensagem | Trecho de Código |" >> asvs_semgrep_report.md
+          echo "|----------------|--------------------|-------|--------|----------|------------------|" >> asvs_semgrep_report.md
+
+          jq -r '
+            .results[] |
+            {
+              check: .check_id,
+              msg: .extra.message,
+              file: .path,
+              line: .start.line,
+              code: .extra.lines
+            } |
+            "| \(.check) | \(.file) | \(.line) | 🟩 | \(.msg) | \(.code) |"
+          ' semgrep_asvs_results.json >> asvs_semgrep_report.md
+
+      - name: 📤 Upload do relatório Markdown
+        uses: actions/upload-artifact@v4
+        with:
+          name: asvs-semgrep-report-md
+          path: asvs_semgrep_report.md
