@@ -25,23 +25,26 @@ jobs:
           mkdir -p semgrep_output
           semgrep --config p/security-audit --config p/secrets --config p/python --output semgrep_output/results.sarif --sarif || echo "🟡 Semgrep falhou ou retornou findings."
 
-      - name: 📝 Gerar relatório em Markdown com trechos (fallback incluso)
+      - name: 📝 Gerar relatório em Markdown com trechos (corrigido)
         run: |
-          echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
-          echo "" >> asvs_semgrep_report.md
+           echo "# 📋 Relatório ASVS com Semgrep" > asvs_semgrep_report.md
+           echo "" >> asvs_semgrep_report.md
 
-          if [ -f semgrep-asvs.json ]; then
+           if [ -f semgrep_output/semgrep-asvs.json ]; then
             jq -r '
-             .results[] |
-             "### 🔹 Regra: \(.check_id)\n" +
-              "**Arquivo:** \(.path)\n" +
-              "**Linha:** \(.start.line)\n\n" +
-             "```python\n\(.extra.lines | join("\n"))\n```" +
-              "\n---\n"
-            ' semgrep-asvs.json >> asvs_semgrep_report.md
-          else
-            echo "⚠️ Arquivo semgrep-asvs.json não encontrado. Sem resultados para exibir." >> asvs_semgrep_report.md
-          fi
+              .results[] |
+              "### 🔹 Regra: \(.check_id)\n" +
+             "**🗂️ Arquivo:** \(.path)\n" +
+             "**🔢 Linha:** \(.start.line)\n\n" +
+             "```python\n\(.extra.lines | join("\n"))\n```\n" +
+             "🟩 **Status:** ❌ Não OK\n\n---\n"
+             ' semgrep_output/semgrep-asvs.json >> asvs_semgrep_report.md
+            else
+            echo "⚠️ Arquivo semgrep_output/semgrep-asvs.json não encontrado. Sem resultados para exibir." >> asvs_semgrep_report.md
+            fi
+
+            echo ""
+            cat asvs_semgrep_report.md
       - name: 📤 Fazer upload dos artefatos
         uses: actions/upload-artifact@v4
         with:
