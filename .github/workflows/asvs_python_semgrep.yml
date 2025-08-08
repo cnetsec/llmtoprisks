@@ -4,18 +4,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  asvs_python_scan:
-    name: 🔍 ASVS Validation via Semgrep (Python)
+  asvs_python_scan: 
     runs-on: ubuntu-latest
+    name: 🔍 Validação Semgrep - Python (ASVS)
 
     steps:
-      - name: ⬇️ Checkout repositório
+      - name: 📥 Clonar repositório
         uses: actions/checkout@v4
 
-      - name: 🛠️ Instalar Semgrep
+      - name: ⚙️ Instalar Semgrep
         run: |
-          curl -sL https://semgrep.dev/install.sh | bash
-
+          pipx install semgrep
       - name: 📦 Instalar dependências (opcional)
         run: |
           pip install -r requirements.txt || echo "🔎 Nenhum requirements.txt encontrado ou erro ignorado."
