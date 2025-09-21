@@ -1,5 +1,5 @@
 Flask==2.0.2
-transformers==4.17.0
+transformers==4.53.0
 torch
 Werkzeug==2.0.2
 
